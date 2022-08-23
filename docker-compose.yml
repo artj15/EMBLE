@@ -1,0 +1,47 @@
+version: "2.2"
+services:
+  emble_app:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+    command: python3 emble_app.py
+    ports:
+      - "8010:8010"
+    volumes:
+      - .:/code
+    links:
+      - db
+      - dbmate
+    depends_on:
+      db:
+        condition: service_healthy
+
+    environment:
+      - SRVC_CONFIG=/etc/local.json.example
+      - LOG_CONFIG=/etc/logging.conf
+  db:
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=emble_app
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dbmate:
+    image: amacneil/dbmate
+    command: -d "/code/etc/db/migrations" up
+    volumes:
+      - .:/code
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/emble_app?sslmode=disable
