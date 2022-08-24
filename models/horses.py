@@ -3,6 +3,10 @@ import datetime
 from pydantic import (
     BaseModel,
 )
+
+from models import (
+    sessions,
+)
 from models.base import (
     SuccessResponse,
 )
@@ -22,14 +26,7 @@ class Horse(BaseModel):
     absolute_stop: datetime.datetime
 
 
-class Session(BaseModel):
-    session_start_time: datetime.datetime
-    id_start_time: int
-    session_end_time: datetime.datetime
-    id_end_time: int
-    horses: list[Horse]
-
-
 class SessionsSuccessResponse(SuccessResponse):
-    data: list[Session]
+    session: sessions.Session
+    data: sessions.ListSessionsSuccessResponse
     moda: int

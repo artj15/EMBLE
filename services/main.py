@@ -61,13 +61,13 @@ def register_shutdown(app):
 
 
 async def startup(app):
-    app.db_pool = await db.init(app.config['db'])
+    app.state.db_pool = await db.init(app.config['db'])
     return app
 
 
 async def shutdown(app):
-    if app.db_pool:
-        await app.db_pool.close()
+    if app.state.db_pool:
+        await app.state.db_pool.close()
 
 
 def register_routers(app):

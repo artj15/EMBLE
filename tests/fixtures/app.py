@@ -25,7 +25,7 @@ async def client(app: FastAPI) -> TestClient:
 
 
 @pytest.fixture
-async def db_pool(app: FastAPI):
+def db_pool(app: FastAPI):
     return app.state.db_pool
 
 

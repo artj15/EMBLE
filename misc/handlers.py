@@ -41,7 +41,7 @@ def register_exception_handler(app):
             for i in errors:
                 validation_error.append(
                     ValidationError(
-                        field='.'.join([str(l) for l in i['loc'][1:]]),
+                        field='.'.join([str(loc) for loc in i['loc'][1:]]),
                         message=i['msg']
                     )
                 )

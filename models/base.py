@@ -19,9 +19,7 @@ class SuccessResponse(BaseModel):
 
 class ListData(BaseModel):
     total: int
-    limit: int
-    page: int
-    items: List[Any]
+    items: Any
 
 
 class ErrorResponse(BaseModel):

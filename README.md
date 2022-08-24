@@ -8,6 +8,10 @@ docker-compose build
 
 docker-compose up dbmate
 
+## Запуск тестов
+
+docker-compose run --rm emble_app pytest tests
+
 ## Запуск приложения
 
 docker-compose up

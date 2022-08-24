@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 async def get(request: fastapi.Request) -> asyncpg.Connection:
     try:
-        pool = request.app.db_pool
+        pool = request.app.state.db_pool
     except AttributeError:
         raise RuntimeError('Application state has no db pool')
     else:

@@ -3,7 +3,7 @@
 
 CREATE TABLE horses
 (
-    id BIGSERIAL,
+    id BIGSERIAL PRIMARY KEY,
     horse_id INTEGER,
     horse_name VARCHAR,
     camera_id INTEGER,

@@ -4,7 +4,7 @@ from typing import (
     Optional,
     List,
     Type,
-    Union,
+    Any,
 )
 
 import asyncpg  # type: ignore
@@ -13,10 +13,12 @@ from pydantic import (
 )
 
 from models import (
-    horses,
+    sessions,
 )
 
 logger = logging.getLogger(__name__)
+HORSES = 'horses'
+SESSIONS = 'sessions'
 
 
 async def init(config: dict) -> asyncpg.Pool:
@@ -35,44 +37,46 @@ async def get_conn(config: dict) -> asyncpg.Connection:
     return await asyncpg.connect(dsn, **config)
 
 
-def record_to_model(model_cls: Type[BaseModel], record: Optional[asyncpg.Record]) -> Union[None, BaseModel]:
+def record_to_model(model_cls: Type[BaseModel], record: Optional[asyncpg.Record]) -> Any:
     return model_cls.parse_obj(record) if record else None
 
 
-def record_to_model_list(model_cls: Type[BaseModel], records: List[asyncpg.Record]) -> list[Optional[BaseModel]]:
+def record_to_model_list(model_cls: Type[BaseModel], records: List[asyncpg.Record]) -> list[Any]:
     return [record_to_model(model_cls, i) for i in records] if records else []
 
 
-async def get_moda(
+async def get_session(
         camera_id: int,
         start_time: datetime.datetime,
         stop_time: datetime.datetime,
+        conn: asyncpg.Connection,
+) -> Optional[sessions.Session]:
+    values = [camera_id, start_time, stop_time]
+    query = f'SELECT * FROM {SESSIONS} WHERE camera_id = $1 and absolute_start >= $2 and absolute_end >= $3'
+    result = await conn.fetchrow(query, *values)
+    return record_to_model(sessions.Session, result)
+
+
+async def get_sessions_count(
         conn: asyncpg.Connection,
 ) -> int:
-    table = 'horses'
-    values = [camera_id, start_time, stop_time]
-    query = f'''SELECT horse_id FROM {table} WHERE camera_id = $1 and absolute_start >= $2 AND absolute_start <= $3 
-                GROUP BY horse_id ORDER BY COUNT(horse_id) DESC LIMIT 1'''
-    result = await conn.fetchrow(query, *values)
-    return result['horse_id']
+    query = f'SELECT COUNT(*) FROM {SESSIONS}'
+    result = await conn.fetchrow(query)
+    return result['count']
 
 
-async def get(
-        camera_id: int,
-        start_time: datetime.datetime,
-        stop_time: datetime.datetime,
+async def get_session_actions(
+        id_start: int,
+        id_end: int,
         conn: asyncpg.Connection,
-) -> list[Optional[BaseModel]]:
-    table = 'horses'
-    values = [camera_id, start_time, stop_time]
-    query = f'''SELECT * FROM {table} 
-                WHERE camera_id = $1 and absolute_start >= $2 AND absolute_start <= $3 
-                order by horse_id'''
-    result = await conn.fetch(query, *values)
-    logger.info(f'{result=}')
-    for session in result:
-        horses.Session(
-            type=res['even_type']
-    return [horses.Session(
-        type=res['even_type'],
-    ) for res in result] if result else []
+) -> Optional[sessions.SessionResponse]:
+    values = [id_start, id_end]
+    query_actions = f'''SELECT horse_id, count(*) as total_actions FROM {HORSES} where id >= $1 and id <= $2
+                GROUP BY horse_id ORDER BY count(*) DESC'''
+    total_actions = f'SELECT COUNT(*) FROM {HORSES} where id >= $1 and id <= $2'
+    result = await conn.fetch(query_actions, *values)
+    result_total = await conn.fetchrow(total_actions, *values)
+    return sessions.SessionResponse(
+        total_actions=result_total['count'],
+        data=[sessions.HorseActions.parse_obj(model) for model in result],
+    ) if result and result_total else None
